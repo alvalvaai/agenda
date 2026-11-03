@@ -63,6 +63,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .chip.g{background:var(--group-soft);color:var(--group)}
 .chip.u{background:var(--warm-soft);color:var(--warm)}
 .chip.h{background:var(--accent-soft);color:var(--accent)}
+.pn{display:block;margin-top:5px;font-size:.84rem;color:var(--warm);background:var(--warm-soft);border-radius:7px;padding:3px 8px;width:fit-content;max-width:100%;overflow-wrap:anywhere}
 .lnk{color:var(--accent);font-weight:600;text-decoration:none}
 .sug{border:1px dashed var(--warm);background:var(--warm-soft);color:var(--warm);border-radius:7px;padding:2px 8px;font-size:.78rem;font-weight:600}
 .mem{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -139,6 +140,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div id="fContact">
       <div class="f"><label for="fPhone">Téléphone (gardé dans le carnet)</label><input id="fPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="06 12 34 56 78"></div>
       <div class="f"><label for="fAddr">Adresse à domicile (gardée dans le carnet)</label><input id="fAddr" autocomplete="off" placeholder="12 rue de la République, Albertville"></div>
+      <div class="f"><label for="fPNote">Remarque permanente (gardée dans le carnet)</label><input id="fPNote" autocomplete="off" placeholder="Toujours après 16h, se garer en face"></div>
     </div>
     <div class="f"><label for="fNote">Remarque pour ce rendez-vous</label><input id="fNote" autocomplete="off" placeholder="KT, 2 séances"></div>
     <div class="ck">
@@ -220,7 +222,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="veil" id="dirVeil" hidden>
   <div class="sheet">
     <h2>Carnet de patients</h2>
-    <p>Rempli automatiquement quand vous ajoutez un téléphone ou une adresse. Touchez un patient pour le modifier.</p>
+    <p>Rempli automatiquement quand vous ajoutez un téléphone, une adresse ou une remarque. Touchez un patient pour le modifier.</p>
     <div class="list" id="dirList" style="margin-bottom:12px"></div>
     <div class="acts"><button type="button" class="btn" data-close>Fermer</button></div>
   </div>
@@ -232,6 +234,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="f"><label for="pName">Nom (orthographe correcte)</label><input id="pName" autocomplete="off"></div>
     <div class="f"><label for="pPhone">Téléphone</label><input id="pPhone" type="tel" inputmode="tel" autocomplete="off"></div>
     <div class="f"><label for="pAddr">Adresse</label><input id="pAddr" autocomplete="off"></div>
+    <div class="f"><label for="pNote">Remarque permanente</label><textarea id="pNote" rows="2" style="font-family:var(--body);font-size:1rem" placeholder="Toujours après 16h, se garer en face"></textarea></div>
     <p id="pAliases"></p>
     <div class="acts"><button type="button" class="btn d" id="pDel">Supprimer</button><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn p">Enregistrer</button></div>
   </form>
@@ -273,10 +276,10 @@ function suggest(name){const n=norm(name);if(n.length<4)return null;let best=nul
   for(const k in S.dir){for(const c of [k,...(S.dir[k].aliases||[])]){const d=lev(n,c);const lim=n.length>=7?2:1;if(d<=lim&&d<bd){bd=d;best=k}}}
   return best}
 function display(name){const k=find(name);return k?S.dir[k].name:name}
-function upsertDir(name,phone,addr){const n=norm(name);if(!n)return;const k=find(name)||n;
+function upsertDir(name,phone,addr,note){const n=norm(name);if(!n)return;const k=find(name)||n;
   const e=S.dir[k]||{name:name,aliases:[]};e.name=e.name||name;
-  if(phone!==undefined)e.phone=phone||undefined; if(addr!==undefined)e.addr=addr||undefined;
-  if(!e.phone&&!e.addr&&!(e.aliases||[]).length&&!S.dir[k]){return}
+  if(phone!==undefined)e.phone=phone||undefined; if(addr!==undefined)e.addr=addr||undefined; if(note!==undefined)e.note=note||undefined;
+  if(!e.phone&&!e.addr&&!e.note&&!(e.aliases||[]).length&&!S.dir[k]){return}
   S.dir[k]=e}
 function addAlias(wrong,right){const nw=norm(wrong),nr=norm(right);if(!nw||!nr||nw===nr)return;
   const k=find(right)||nr;const e=S.dir[k]||{name:right,aliases:[]};e.aliases=e.aliases||[];
@@ -307,7 +310,8 @@ function render(){
     const tel=single?.phone?`<span class="ph"><a class="lnk" href="tel:${esc(single.phone.replace(/[^\d+]/g,""))}">Appeler ${esc(single.phone)}</a><button type="button" class="sm cp" data-p="${esc(single.phone)}">Copier</button></span>`:"";
     const gps=addr?`<a class="lnk" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener">Itinéraire ↗</a>`:"";
     const meta=[chips,a.note?`<span>${esc(a.note)}</span>`:"",addr?`<span>${esc(addr)}</span>`:"",gps,sugs].join("");
-    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${multi?"":`<span class="nm">${esc(display(a.name))}</span>`}${meta.trim()?`<span class="meta">${meta}</span>`:""}${memHtml}${tel}</span></div>`}).join("");
+    const pnotes=multi?mems.map(m=>{const k=find(m);return k&&S.dir[k].note?`<span class="pn">${esc(S.dir[k].name)} : ${esc(S.dir[k].note)}</span>`:""}).join(""):(single?.note?`<span class="pn">${esc(single.note)}</span>`:"");
+    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${multi?"":`<span class="nm">${esc(display(a.name))}</span>`}${meta.trim()?`<span class="meta">${meta}</span>`:""}${pnotes}${memHtml}${tel}</span></div>`}).join("");
 }
 
 /* ---------- sheets ---------- */
@@ -329,7 +333,7 @@ function syncContact(){
   const nm=$("fName").value.trim(),multi=members(nm).length>1;
   $("fContact").hidden=multi;
   const k=find(nm),e=k?S.dir[k]:null;
-  $("fPhone").value=e?.phone||"";$("fAddr").value=e?.addr||"";
+  $("fPhone").value=e?.phone||"";$("fAddr").value=e?.addr||"";$("fPNote").value=e?.note||"";
   $("fAliasWrap").hidden=!(editOrig&&norm(nm)!==norm(editOrig)&&nm&&!multi&&members(editOrig).length===1);
 }
 $("fName").addEventListener("change",syncContact);
@@ -340,7 +344,7 @@ $("form").onsubmit=e=>{
   if(!name){$("fErr").hidden=false;$("fName").focus();return}
   const prev=editId?S.appts.find(x=>x.id===editId):null;
   if(prev&&!$("fAliasWrap").hidden&&$("fAlias").checked)addAlias(editOrig,name);
-  if(members(name).length===1)upsertDir(name,$("fPhone").value.trim(),$("fAddr").value.trim());
+  if(members(name).length===1)upsertDir(name,$("fPhone").value.trim(),$("fAddr").value.trim(),$("fPNote").value.trim());
   const a={id:editId||uid(),date:$("fDate").value||sel,time:$("fTime").value||"09:00",name,
     note:$("fNote").value.trim()||undefined,group:$("fGroup").checked||undefined,unsure:$("fUnsure").checked||undefined,
     done:prev?.done,present:prev?.present};
@@ -392,8 +396,8 @@ function mergeImport(st,p){
   st.appts=out;
   for(const d in (p.notes||{}))if(p.notes[d])st.notes[d]=p.notes[d];
   for(const k in (p.dir||{})){const e=p.dir[k],cur=st.dir[k];
-    if(!cur)st.dir[k]={name:e.name,phone:e.phone,addr:e.addr,aliases:e.aliases||[]};
-    else{cur.phone=cur.phone||e.phone;cur.addr=cur.addr||e.addr;cur.aliases=[...new Set([...(cur.aliases||[]),...(e.aliases||[])])]}}
+    if(!cur)st.dir[k]={name:e.name,phone:e.phone,addr:e.addr,note:e.note,aliases:e.aliases||[]};
+    else{cur.phone=cur.phone||e.phone;cur.addr=cur.addr||e.addr;cur.note=cur.note||e.note;cur.aliases=[...new Set([...(cur.aliases||[]),...(e.aliases||[])])]}}
   return st}
 
 function summarize(p){const ds=[...new Set((p.appts||[]).map(a=>a.date))].sort();
@@ -442,7 +446,8 @@ $("sText").onclick=()=>{
   list.forEach(a=>{if(a.date!==cur){cur=a.date;out+=(out?"\n":"")+fdate(a.date).replace(/^./,c=>c.toUpperCase())+"\n"}
     const mems=members(a.name);
     out+=`${hm(a.time)}  ${mems.map(display).join(", ")}${a.group?" (groupe)":""}${a.note?" — "+a.note:""}\n`;
-    if(mems.length===1){const k=find(a.name),e=k&&S.dir[k];if(e?.phone)out+=`        Tél. ${e.phone}\n`;if(e?.addr)out+=`        Adresse : ${e.addr}\n`}});
+    if(mems.length===1){const k=find(a.name),e=k&&S.dir[k];if(e?.phone)out+=`        Tél. ${e.phone}\n`;if(e?.addr)out+=`        Adresse : ${e.addr}\n`;if(e?.note)out+=`        À savoir : ${e.note}\n`}
+    else mems.forEach(m=>{const k=find(m),e=k&&S.dir[k];if(e?.note)out+=`        ${e.name} : ${e.note}\n`})});
   Object.keys(S.notes).filter(d=>d>=$("sFrom").value&&d<=$("sTo").value).sort().forEach((d,i)=>{if(!i)out+="\nNotes\n";out+=`${fdate(d,{weekday:"short",day:"numeric"})} : ${S.notes[d]}\n`});
   showOut("Agenda en texte","Envoyez ce texte à votre remplaçant (SMS, WhatsApp, mail).",out.trim(),null);
 };
@@ -461,15 +466,15 @@ $("mBackup").onclick=()=>{
 
 /* ---------- directory ---------- */
 function renderDir(){const ks=Object.keys(S.dir).sort((a,b)=>S.dir[a].name.localeCompare(S.dir[b].name,"fr"));
-  $("dirList").innerHTML=ks.length?ks.map(k=>{const e=S.dir[k];return `<div class="row" data-k="${esc(k)}" tabindex="0"><span class="who"><span class="nm">${esc(e.name)}</span><span class="meta">${e.phone?`<span>${esc(e.phone)}</span>`:""}${e.addr?`<span>${esc(e.addr)}</span>`:""}${(e.aliases||[]).length?`<span>aussi écrit : ${esc(e.aliases.join(", "))}</span>`:""}</span></span></div>`}).join(""):`<div class="empty">Le carnet est vide. Ajoutez un téléphone ou une adresse à un rendez-vous.</div>`}
+  $("dirList").innerHTML=ks.length?ks.map(k=>{const e=S.dir[k];return `<div class="row" data-k="${esc(k)}" tabindex="0"><span class="who"><span class="nm">${esc(e.name)}</span><span class="meta">${e.phone?`<span>${esc(e.phone)}</span>`:""}${e.addr?`<span>${esc(e.addr)}</span>`:""}${e.note?`<span>${esc(e.note)}</span>`:""}${(e.aliases||[]).length?`<span>aussi écrit : ${esc(e.aliases.join(", "))}</span>`:""}</span></span></div>`}).join(""):`<div class="empty">Le carnet est vide. Ajoutez un téléphone ou une adresse à un rendez-vous.</div>`}
 $("menuBtn").onclick=()=>{$("dirCount").textContent=`${Object.keys(S.dir).length} patients enregistrés`;open("menuVeil")};
 $("mDir").onclick=()=>{renderDir();open("dirVeil")};
 $("dirList").addEventListener("click",e=>{const r=e.target.closest(".row");if(!r||!r.dataset.k)return;pKey=r.dataset.k;const p=S.dir[pKey];
-  $("pName").value=p.name;$("pPhone").value=p.phone||"";$("pAddr").value=p.addr||"";
+  $("pName").value=p.name;$("pPhone").value=p.phone||"";$("pAddr").value=p.addr||"";$("pNote").value=p.note||"";
   $("pAliases").textContent=(p.aliases||[]).length?"Reconnu aussi sous : "+p.aliases.join(", "):"";
   $("pDel").textContent="Supprimer";$("pDel").dataset.armed="";open("pVeil")});
 $("pForm").onsubmit=e=>{e.preventDefault();const p=S.dir[pKey];const nn=$("pName").value.trim()||p.name;
-  p.phone=$("pPhone").value.trim()||undefined;p.addr=$("pAddr").value.trim()||undefined;
+  p.phone=$("pPhone").value.trim()||undefined;p.addr=$("pAddr").value.trim()||undefined;p.note=$("pNote").value.trim()||undefined;
   if(norm(nn)!==pKey){delete S.dir[pKey];p.aliases=[...new Set([...(p.aliases||[]),pKey])].filter(x=>x!==norm(nn));p.name=nn;S.dir[norm(nn)]=p}else p.name=nn;
   save();renderDir();render();open("dirVeil")};
 $("pDel").onclick=()=>{const b=$("pDel");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Confirmer";return}delete S.dir[pKey];save();renderDir();render();open("dirVeil")};

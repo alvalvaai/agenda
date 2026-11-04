@@ -73,6 +73,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 .m.on b{background:var(--accent);border-color:var(--accent)}
 .m.abs{border-color:var(--danger);color:var(--danger)}
 .m.abs b{border-color:var(--danger)}
+.mw{display:inline-flex;align-items:stretch}
+.mw .m{border-radius:8px 0 0 8px}
+.fi{border:1px solid var(--line);border-left:0;background:var(--card);border-radius:0 8px 8px 0;padding:0 8px;font-size:.75rem;font-weight:600;color:var(--accent)}
+.mw .m.on+.fi{border-color:var(--accent)}
+.mw .m.abs+.fi{border-color:var(--danger)}
+.mph{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:.85rem}
+.mph a{font-variant-numeric:tabular-nums}
 .ph{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:.85rem;flex-wrap:wrap}
 .ph a{font-variant-numeric:tabular-nums}
 .sm{border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:2px 8px;font-size:.75rem;color:var(--muted)}
@@ -222,16 +229,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="veil" id="dirVeil" hidden>
   <div class="sheet">
     <h2>Carnet de patients</h2>
-    <p>Rempli automatiquement quand vous ajoutez un téléphone, une adresse ou une remarque. Touchez un patient pour le modifier.</p>
+    <p>Touchez un patient pour modifier sa fiche, ou ajoutez-en un nouveau, même s'il n'est pas encore dans l'agenda.</p>
+    <div class="f"><label for="dirSearch">Rechercher</label><input id="dirSearch" type="search" autocomplete="off" placeholder="Nom du patient"></div>
     <div class="list" id="dirList" style="margin-bottom:12px"></div>
-    <div class="acts"><button type="button" class="btn" data-close>Fermer</button></div>
+    <div class="acts"><button type="button" class="btn" data-close>Fermer</button><button type="button" class="btn p" id="dirNew">+ Nouveau patient</button></div>
   </div>
 </div>
 
 <div class="veil" id="pVeil" hidden>
   <form class="sheet" id="pForm">
-    <h2>Fiche patient</h2>
-    <div class="f"><label for="pName">Nom (orthographe correcte)</label><input id="pName" autocomplete="off"></div>
+    <h2 id="pTitle">Fiche patient</h2>
+    <div class="f"><label for="pName">Nom (orthographe correcte)</label><input id="pName" autocomplete="off" placeholder="Traversier"><span class="err" id="pErr" hidden>Indiquez un nom</span></div>
     <div class="f"><label for="pPhone">Téléphone</label><input id="pPhone" type="tel" inputmode="tel" autocomplete="off"></div>
     <div class="f"><label for="pAddr">Adresse</label><input id="pAddr" autocomplete="off"></div>
     <div class="f"><label for="pNote">Remarque permanente</label><textarea id="pNote" rows="2" style="font-family:var(--body);font-size:1rem" placeholder="Toujours après 16h, se garer en face"></textarea></div>
@@ -306,12 +314,13 @@ function render(){
     const addr=single?.addr;
     const chips=[a.group?'<span class="chip g">Groupe</span>':"",a.unsure?'<span class="chip u">À vérifier</span>':"",addr?'<span class="chip h">Domicile</span>':""].join("");
     const sugs=mems.map(m=>{if(find(m))return"";const s=suggest(m);return s?`<button type="button" class="sug" data-fix="${esc(m)}" data-to="${esc(s)}">${esc(m)} → ${esc(S.dir[s].name)} ?</button>`:""}).join("");
-    const memHtml=multi?`<span class="mem">${mems.map(m=>{const on=!!pres[m],abs=a.done&&!on;return `<button type="button" class="m${on?" on":""}${abs?" abs":""}" data-m="${esc(m)}" aria-pressed="${on}"><b>${on?"✓":""}</b>${esc(display(m))}${abs?" · absent ?":""}</button>`}).join("")}</span>`:"";
+    const memHtml=multi?`<span class="mem">${mems.map(m=>{const on=!!pres[m],abs=a.done&&!on;return `<span class="mw"><button type="button" class="m${on?" on":""}${abs?" abs":""}" data-m="${esc(m)}" aria-pressed="${on}"><b>${on?"✓":""}</b>${esc(display(m))}${abs?" · absent ?":""}</button><button type="button" class="fi" data-f="${esc(m)}" aria-label="Fiche de ${esc(display(m))}">Fiche</button></span>`}).join("")}</span>`:"";
+    const memTel=multi?mems.map(m=>{const k=find(m),e=k&&S.dir[k];return e?.phone?`<span class="ph" style="margin:0"><a class="lnk" href="tel:${esc(e.phone.replace(/[^\d+]/g,""))}">Appeler ${esc(e.name)} · ${esc(e.phone)}</a><button type="button" class="sm cp" data-p="${esc(e.phone)}">Copier</button></span>`:""}).filter(Boolean).join(""):"";
     const tel=single?.phone?`<span class="ph"><a class="lnk" href="tel:${esc(single.phone.replace(/[^\d+]/g,""))}">Appeler ${esc(single.phone)}</a><button type="button" class="sm cp" data-p="${esc(single.phone)}">Copier</button></span>`:"";
     const gps=addr?`<a class="lnk" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener">Itinéraire ↗</a>`:"";
     const meta=[chips,a.note?`<span>${esc(a.note)}</span>`:"",addr?`<span>${esc(addr)}</span>`:"",gps,sugs].join("");
     const pnotes=multi?mems.map(m=>{const k=find(m);return k&&S.dir[k].note?`<span class="pn">${esc(S.dir[k].name)} : ${esc(S.dir[k].note)}</span>`:""}).join(""):(single?.note?`<span class="pn">${esc(single.note)}</span>`:"");
-    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${multi?"":`<span class="nm">${esc(display(a.name))}</span>`}${meta.trim()?`<span class="meta">${meta}</span>`:""}${pnotes}${memHtml}${tel}</span></div>`}).join("");
+    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${multi?"":`<span class="nm">${esc(display(a.name))}</span>`}${meta.trim()?`<span class="meta">${meta}</span>`:""}${pnotes}${memHtml}${memTel?`<span class="mph">${memTel}</span>`:""}${tel}</span></div>`}).join("");
 }
 
 /* ---------- sheets ---------- */
@@ -359,6 +368,8 @@ $("list").addEventListener("click",e=>{
   if(e.target.closest("a"))return;
   const r=e.target.closest(".row");if(!r)return;const a=S.appts.find(x=>x.id===r.dataset.id);if(!a)return;
   if(e.target.closest(".done")){a.done=!a.done||undefined;save();render();return}
+  const fb=e.target.closest(".fi");
+  if(fb){openPatient(fb.dataset.f,"list");return}
   const mb=e.target.closest(".m");
   if(mb){const n=mb.dataset.m;a.present=a.present||{};if(a.present[n])delete a.present[n];else a.present[n]=true;save();render();return}
   const cp=e.target.closest(".cp");if(cp){copy(cp.dataset.p,"Numéro copié");return}
@@ -465,19 +476,39 @@ $("mBackup").onclick=()=>{
 };
 
 /* ---------- directory ---------- */
-function renderDir(){const ks=Object.keys(S.dir).sort((a,b)=>S.dir[a].name.localeCompare(S.dir[b].name,"fr"));
-  $("dirList").innerHTML=ks.length?ks.map(k=>{const e=S.dir[k];return `<div class="row" data-k="${esc(k)}" tabindex="0"><span class="who"><span class="nm">${esc(e.name)}</span><span class="meta">${e.phone?`<span>${esc(e.phone)}</span>`:""}${e.addr?`<span>${esc(e.addr)}</span>`:""}${e.note?`<span>${esc(e.note)}</span>`:""}${(e.aliases||[]).length?`<span>aussi écrit : ${esc(e.aliases.join(", "))}</span>`:""}</span></span></div>`}).join(""):`<div class="empty">Le carnet est vide. Ajoutez un téléphone ou une adresse à un rendez-vous.</div>`}
+function renderDir(){const q=norm($("dirSearch").value);const ks=Object.keys(S.dir).filter(k=>!q||k.includes(q)||norm(S.dir[k].name).includes(q)||(S.dir[k].aliases||[]).some(a=>a.includes(q))).sort((a,b)=>S.dir[a].name.localeCompare(S.dir[b].name,"fr"));
+  $("dirList").innerHTML=ks.length?ks.map(k=>{const e=S.dir[k];return `<div class="row" data-k="${esc(k)}" tabindex="0"><span class="who"><span class="nm">${esc(e.name)}</span><span class="meta">${e.phone?`<span>${esc(e.phone)}</span>`:""}${e.addr?`<span>${esc(e.addr)}</span>`:""}${e.note?`<span>${esc(e.note)}</span>`:""}${(e.aliases||[]).length?`<span>aussi écrit : ${esc(e.aliases.join(", "))}</span>`:""}</span></span></div>`}).join(""):`<div class="empty">${q?"Aucun patient trouvé.":"Le carnet est vide. Ajoutez votre premier patient."}</div>`}
 $("menuBtn").onclick=()=>{$("dirCount").textContent=`${Object.keys(S.dir).length} patients enregistrés`;open("menuVeil")};
-$("mDir").onclick=()=>{renderDir();open("dirVeil")};
-$("dirList").addEventListener("click",e=>{const r=e.target.closest(".row");if(!r||!r.dataset.k)return;pKey=r.dataset.k;const p=S.dir[pKey];
-  $("pName").value=p.name;$("pPhone").value=p.phone||"";$("pAddr").value=p.addr||"";$("pNote").value=p.note||"";
+$("mDir").onclick=()=>{$("dirSearch").value="";renderDir();open("dirVeil")};
+let pFrom="dir", pOrig=null;
+function openPatient(nameOrKey,from){
+  pFrom=from||"dir";
+  const k=S.dir[nameOrKey]?nameOrKey:find(nameOrKey);
+  pKey=k||null; pOrig=k?null:(nameOrKey||null);
+  const p=k?S.dir[k]:{name:nameOrKey||""};
+  $("pTitle").textContent=k?"Fiche patient":"Nouveau patient";
+  $("pName").value=p.name||"";$("pPhone").value=p.phone||"";$("pAddr").value=p.addr||"";$("pNote").value=p.note||"";
   $("pAliases").textContent=(p.aliases||[]).length?"Reconnu aussi sous : "+p.aliases.join(", "):"";
-  $("pDel").textContent="Supprimer";$("pDel").dataset.armed="";open("pVeil")});
-$("pForm").onsubmit=e=>{e.preventDefault();const p=S.dir[pKey];const nn=$("pName").value.trim()||p.name;
-  p.phone=$("pPhone").value.trim()||undefined;p.addr=$("pAddr").value.trim()||undefined;p.note=$("pNote").value.trim()||undefined;
-  if(norm(nn)!==pKey){delete S.dir[pKey];p.aliases=[...new Set([...(p.aliases||[]),pKey])].filter(x=>x!==norm(nn));p.name=nn;S.dir[norm(nn)]=p}else p.name=nn;
-  save();renderDir();render();open("dirVeil")};
-$("pDel").onclick=()=>{const b=$("pDel");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Confirmer";return}delete S.dir[pKey];save();renderDir();render();open("dirVeil")};
+  $("pDel").hidden=!k;$("pDel").textContent="Supprimer";$("pDel").dataset.armed="";$("pErr").hidden=true;
+  open("pVeil"); if(!p.name)setTimeout(()=>$("pName").focus(),50);
+}
+function afterPatient(){save();render();if(pFrom==="list")closeAll();else{renderDir();open("dirVeil")}}
+$("dirList").addEventListener("click",e=>{const r=e.target.closest(".row");if(r&&r.dataset.k)openPatient(r.dataset.k,"dir")});
+$("dirList").addEventListener("keydown",e=>{const r=e.target.closest(".row");if(r&&r.dataset.k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openPatient(r.dataset.k,"dir")}});
+$("dirNew").onclick=()=>openPatient("",  "dir");
+$("dirSearch").addEventListener("input",renderDir);
+$("pName").addEventListener("input",()=>$("pErr").hidden=true);
+$("pForm").onsubmit=e=>{e.preventDefault();
+  const nn=$("pName").value.trim(); if(!nn){$("pErr").hidden=false;$("pName").focus();return}
+  const fields={phone:$("pPhone").value.trim()||undefined,addr:$("pAddr").value.trim()||undefined,note:$("pNote").value.trim()||undefined};
+  if(pKey){const p=S.dir[pKey];Object.assign(p,fields);
+    if(norm(nn)!==pKey){delete S.dir[pKey];p.aliases=[...new Set([...(p.aliases||[]),pKey])].filter(x=>x!==norm(nn));p.name=nn;S.dir[norm(nn)]=Object.assign(S.dir[norm(nn)]||{},p)}else p.name=nn;
+  }else{
+    const k=find(nn)||norm(nn);const p=S.dir[k]||{name:nn,aliases:[]};p.name=nn;Object.assign(p,fields);S.dir[k]=p;
+    if(pOrig&&norm(pOrig)!==k)addAlias(pOrig,nn);
+  }
+  afterPatient();flash("Fiche enregistrée")};
+$("pDel").onclick=()=>{const b=$("pDel");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="Confirmer";return}delete S.dir[pKey];afterPatient()};
 
 load();render();
 setInterval(render,60000);

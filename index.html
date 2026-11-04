@@ -48,14 +48,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .note{margin:14px 0 4px;background:var(--warm-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:.92rem;display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;border:0}
 .note span{color:var(--warm);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;padding-top:2px;flex:none}
 .list{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.row{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer}
+.row{display:flex;gap:9px;align-items:flex-start;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer}
 .row:first-child{border-top:0}
 .row.now{background:var(--accent-soft)}
 .row.isdone{opacity:.6}
 .row.isdone .t{text-decoration:line-through;color:var(--muted)}
-.done{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--card);font-size:.95rem;font-weight:700;margin-top:-3px}
+.done{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--card);font-size:.95rem;font-weight:700;margin-top:-3px}
 .done.on{background:var(--accent);border-color:var(--accent)}
-.t{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);min-width:3.2em;padding-top:1px}
+.t{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);min-width:2.9em;padding-top:1px}
 .who{min-width:0;flex:1}
 .nm{font-weight:500;overflow-wrap:anywhere}
 .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:.8rem;color:var(--muted);align-items:center}
@@ -73,6 +73,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 .m.on b{background:var(--accent);border-color:var(--accent)}
 .m.abs{border-color:var(--danger);color:var(--danger)}
 .m.abs b{border-color:var(--danger)}
+.pls{display:flex;flex-direction:column;gap:2px}
+.pl{display:flex;align-items:center;gap:7px;min-height:32px;min-width:0}
+.pl .nm,.pl .m{flex:0 0 auto;max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .m{border:0;background:none;padding:4px 0;font-size:1rem;display:flex;gap:8px;align-items:center}
+.pl .m span{overflow:hidden;text-overflow:ellipsis}
+.pl .m b{flex:none;width:20px;height:20px}
+.pl .m{gap:7px}
+.pl .m.on,.pl .m.abs{background:none}
+.pl .m.abs{color:var(--danger)}
+.tel{color:var(--accent);font-weight:600;text-decoration:none;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.86rem;padding:4px 0;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.hm{color:var(--accent);font-size:.95rem;flex:none}
+.pl .fi{margin-left:auto;flex:none;border:1.5px solid var(--accent);border-radius:50%;width:28px;height:28px;padding:0;font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:.95rem;display:grid;place-items:center}
+.pl+.pn,.pn+.pl{margin-top:2px}
 .mw{display:inline-flex;align-items:stretch}
 .mw .m{border-radius:8px 0 0 8px}
 .fi{border:1px solid var(--line);border-left:0;background:var(--card);border-radius:0 8px 8px 0;padding:0 8px;font-size:.75rem;font-weight:600;color:var(--accent)}
@@ -107,6 +120,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .menu b{display:block;font-weight:600}
 .menu span{font-size:.82rem;color:var(--muted)}
 .err{color:var(--danger);font-size:.8rem}
+.maps{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.maps .btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--accent);font-size:.9rem;min-height:40px}
 .ok{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:.9rem;margin-bottom:12px}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
 </style>
@@ -127,7 +142,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </header>
   <button class="note" id="note"><span>Note</span><em id="noteText" style="font-style:normal"></em></button>
   <div class="list" id="list"></div>
-  <p class="hint">Cochez le rond quand la séance est faite. Pour un groupe, cochez chaque patient présent. Touchez un rendez-vous pour le modifier. Les données restent sur ce téléphone : faites une sauvegarde de temps en temps (menu ☰).</p>
+  <p class="hint">Cochez le rond quand la séance est faite. Pour un groupe, cochez chaque patient présent. Touchez un numéro pour appeler, le bouton « i » pour la fiche du patient (adresse, itinéraire), le reste du rendez-vous pour le modifier. Les données restent sur ce téléphone : faites une sauvegarde de temps en temps (menu ☰).</p>
 </div>
 
 <button class="fab" id="add">+ Rendez-vous</button>
@@ -241,7 +256,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     <h2 id="pTitle">Fiche patient</h2>
     <div class="f"><label for="pName">Nom (orthographe correcte)</label><input id="pName" autocomplete="off" placeholder="Traversier"><span class="err" id="pErr" hidden>Indiquez un nom</span></div>
     <div class="f"><label for="pPhone">Téléphone</label><input id="pPhone" type="tel" inputmode="tel" autocomplete="off"></div>
-    <div class="f"><label for="pAddr">Adresse</label><input id="pAddr" autocomplete="off"></div>
+    <div class="f"><label for="pAddr">Adresse</label><input id="pAddr" autocomplete="off">
+      <span class="maps" id="pMaps" hidden><a class="btn" id="mapG" target="_blank" rel="noopener">Google Maps ↗</a><a class="btn" id="mapW" target="_blank" rel="noopener">Waze ↗</a><a class="btn" id="mapA" target="_blank" rel="noopener">Plans ↗</a></span></div>
+    <div class="f" id="pTelWrap" hidden><a class="btn" id="pCall" style="display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--accent)">Appeler</a></div>
     <div class="f"><label for="pNote">Remarque permanente</label><textarea id="pNote" rows="2" style="font-family:var(--body);font-size:1rem" placeholder="Toujours après 16h, se garer en face"></textarea></div>
     <p id="pAliases"></p>
     <div class="acts"><button type="button" class="btn d" id="pDel">Supprimer</button><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn p">Enregistrer</button></div>
@@ -310,17 +327,17 @@ function render(){
     let cls=a.done?" isdone":"";
     if(!a.done&&sel===todayS&&!nextMarked){cls=" now";nextMarked=true}
     const mems=members(a.name),pres=a.present||{},multi=mems.length>1;
-    const single=!multi&&find(a.name)?S.dir[find(a.name)]:null;
-    const addr=single?.addr;
-    const chips=[a.group?'<span class="chip g">Groupe</span>':"",a.unsure?'<span class="chip u">À vérifier</span>':"",addr?'<span class="chip h">Domicile</span>':""].join("");
+    const telA=e=>e?.phone?`<a class="tel" href="tel:${esc(e.phone.replace(/[^\d+]/g,""))}">${esc(e.phone.replace(/^\+33\s?\(?0?\)?\s?/,"0"))}</a>`:"";
+    const entry=m=>{const k=find(m);return k?S.dir[k]:null};
+    const fiche=m=>`<button type="button" class="fi" data-f="${esc(m)}" aria-label="Fiche de ${esc(display(m))}">i</button>`;
+    const home=e=>"";
+    const chips=[a.group?'<span class="chip g">Groupe</span>':"",a.unsure?'<span class="chip u">À vérifier</span>':""].join("");
     const sugs=mems.map(m=>{if(find(m))return"";const s=suggest(m);return s?`<button type="button" class="sug" data-fix="${esc(m)}" data-to="${esc(s)}">${esc(m)} → ${esc(S.dir[s].name)} ?</button>`:""}).join("");
-    const memHtml=multi?`<span class="mem">${mems.map(m=>{const on=!!pres[m],abs=a.done&&!on;return `<span class="mw"><button type="button" class="m${on?" on":""}${abs?" abs":""}" data-m="${esc(m)}" aria-pressed="${on}"><b>${on?"✓":""}</b>${esc(display(m))}${abs?" · absent ?":""}</button><button type="button" class="fi" data-f="${esc(m)}" aria-label="Fiche de ${esc(display(m))}">Fiche</button></span>`}).join("")}</span>`:"";
-    const memTel=multi?mems.map(m=>{const k=find(m),e=k&&S.dir[k];return e?.phone?`<span class="ph" style="margin:0"><a class="lnk" href="tel:${esc(e.phone.replace(/[^\d+]/g,""))}">Appeler ${esc(e.name)} · ${esc(e.phone)}</a><button type="button" class="sm cp" data-p="${esc(e.phone)}">Copier</button></span>`:""}).filter(Boolean).join(""):"";
-    const tel=single?.phone?`<span class="ph"><a class="lnk" href="tel:${esc(single.phone.replace(/[^\d+]/g,""))}">Appeler ${esc(single.phone)}</a><button type="button" class="sm cp" data-p="${esc(single.phone)}">Copier</button></span>`:"";
-    const gps=addr?`<a class="lnk" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}" target="_blank" rel="noopener">Itinéraire ↗</a>`:"";
-    const meta=[chips,a.note?`<span>${esc(a.note)}</span>`:"",addr?`<span>${esc(addr)}</span>`:"",gps,sugs].join("");
-    const pnotes=multi?mems.map(m=>{const k=find(m);return k&&S.dir[k].note?`<span class="pn">${esc(S.dir[k].name)} : ${esc(S.dir[k].note)}</span>`:""}).join(""):(single?.note?`<span class="pn">${esc(single.note)}</span>`:"");
-    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${multi?"":`<span class="nm">${esc(display(a.name))}</span>`}${meta.trim()?`<span class="meta">${meta}</span>`:""}${pnotes}${memHtml}${memTel?`<span class="mph">${memTel}</span>`:""}${tel}</span></div>`}).join("");
+    const meta=[chips,a.note?`<span>${esc(a.note)}</span>`:"",sugs].join("");
+    const lines=mems.map(m=>{const e=entry(m),on=!!pres[m],abs=a.done&&!on;
+      const name=multi?`<button type="button" class="m${on?" on":""}${abs?" abs":""}" data-m="${esc(m)}" aria-pressed="${on}"><b>${on?"✓":""}</b><span>${esc(display(m))}${abs?" · absent ?":""}</span></button>`:`<span class="nm">${esc(display(m))}</span>`;
+      return `<span class="pl">${name}${home(e)}${telA(e)}${fiche(m)}</span>${e?.note?`<span class="pn">${esc(e.note)}</span>`:""}`}).join("");
+    return `<div class="row${cls}" tabindex="0" data-id="${a.id}"><button type="button" class="done${a.done?" on":""}" aria-label="Séance faite" aria-pressed="${!!a.done}">${a.done?"✓":""}</button><span class="t">${hm(a.time)}</span><span class="who">${meta.trim()?`<span class="meta" style="margin:0 0 4px">${meta}</span>`:""}<span class="pls">${lines}</span></span></div>`}).join("");
 }
 
 /* ---------- sheets ---------- */
@@ -490,8 +507,12 @@ function openPatient(nameOrKey,from){
   $("pName").value=p.name||"";$("pPhone").value=p.phone||"";$("pAddr").value=p.addr||"";$("pNote").value=p.note||"";
   $("pAliases").textContent=(p.aliases||[]).length?"Reconnu aussi sous : "+p.aliases.join(", "):"";
   $("pDel").hidden=!k;$("pDel").textContent="Supprimer";$("pDel").dataset.armed="";$("pErr").hidden=true;
-  open("pVeil"); if(!p.name)setTimeout(()=>$("pName").focus(),50);
+  syncMaps(); open("pVeil"); if(!p.name)setTimeout(()=>$("pName").focus(),50);
 }
+function syncMaps(){const a=$("pAddr").value.trim(),q=encodeURIComponent(a);$("pMaps").hidden=!a;
+  if(a){$("mapG").href="https://www.google.com/maps/dir/?api=1&destination="+q;$("mapW").href="https://waze.com/ul?q="+q+"&navigate=yes";$("mapA").href="https://maps.apple.com/?daddr="+q}
+  const t=$("pPhone").value.trim();$("pTelWrap").hidden=!t;if(t){$("pCall").href="tel:"+t.replace(/[^\d+]/g,"");$("pCall").textContent="Appeler "+t}}
+$("pAddr").addEventListener("input",syncMaps);$("pPhone").addEventListener("input",syncMaps);
 function afterPatient(){save();render();if(pFrom==="list")closeAll();else{renderDir();open("dirVeil")}}
 $("dirList").addEventListener("click",e=>{const r=e.target.closest(".row");if(r&&r.dataset.k)openPatient(r.dataset.k,"dir")});
 $("dirList").addEventListener("keydown",e=>{const r=e.target.closest(".row");if(r&&r.dataset.k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openPatient(r.dataset.k,"dir")}});

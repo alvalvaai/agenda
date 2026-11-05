@@ -281,14 +281,16 @@ function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 function fdate(s,o){return parse(s).toLocaleDateString("fr-FR",o||{weekday:"long",day:"numeric",month:"long"})}
 function uid(){return "x"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function norm(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()
-  .replace(/×\s*\d+|x\s*\d+$/g,"").replace(/\b(mme|mr|m\.|mlle|madame|monsieur)\b/g,"").replace(/[^a-z0-9 -]/g," ").replace(/\s+/g," ").trim()}
+  .replace(/×\s*\d+|x\s*\d+$/g,"").replace(/\bmadame\b/g,"mme").replace(/\bmonsieur\b/g,"m").replace(/[^a-z0-9 -]/g," ").replace(/\s+/g," ").trim()}
 function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let p=[...Array(n+1).keys()];
   for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
 function members(name){return String(name).split(/\s*[,/]\s*/).map(x=>x.trim()).filter(Boolean)}
 function flash(msg,ms=2000){const s=$("status");s.textContent=msg;s.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(()=>s.hidden=true,ms)}
 
 /* ---------- storage ---------- */
-function load(){try{const j=JSON.parse(localStorage.getItem(LS)||"null");if(j&&Array.isArray(j.appts))S={appts:j.appts,notes:j.notes||{},dir:j.dir||{}}}catch(e){}}
+function load(){try{const j=JSON.parse(localStorage.getItem(LS)||"null");if(j&&Array.isArray(j.appts))S={appts:j.appts,notes:j.notes||{},dir:j.dir||{}}}catch(e){}
+  /* re-key fiches saved with the old matching that ignored Mme/M. */
+  for(const k of Object.keys(S.dir)){const e=S.dir[k],nk=norm(e.name);if(nk&&nk!==k&&!S.dir[nk]){delete S.dir[k];S.dir[nk]=e}}}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){flash("Enregistrement impossible sur ce navigateur",4000)}}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 
